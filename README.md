@@ -40,6 +40,16 @@
 * 추가적인 이미지 생성 모델 지원
 * 프롬프트 분석 기능 강화
 
+**설치 방법**
+0. GCP Credential이 설치되어 있어야 합니다.
+1. 해당 App을 내려받습니다. 
+2. virtualenv .venv
+3. source .venv/bin/activate
+4. pip install -r requirements.txt
+5. echo EXPORT PROJECT_ID=<your project id> >> .env
+6. echo EXPORT LOCATION=us-central1 >> .env
+7. streamlit run main.py
+
 **라이선스:**
 
 이 앱은 Apache 2.0 라이선스에 따라 배포됩니다.
