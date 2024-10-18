@@ -11,7 +11,12 @@ def edit_image_app():
 
     with col1:
         st.header("Input")
-        
+
+        model_selection = st.selectbox(
+            "Edit Model Selection",
+            ["imagegeneration@006", "imagen-3.0-generate-001", "imagen-3.0-fast-generate-001"]
+        )
+
         # Image upload
         edit_uploaded_file = st.file_uploader("Choose an image", type=["jpg", "jpeg", "png"])
         if edit_uploaded_file is not None:
@@ -64,7 +69,8 @@ def edit_image_app():
         if st.button("Edit Image"):
             if edit_uploaded_file is not None or edit_image_path:
                 # Initialize the model
-                model = ImageGenerationModel.from_pretrained("imagegeneration@006")
+                #model = ImageGenerationModel.from_pretrained("imagegeneration@006")
+                model = ImageGenerationModel.from_pretrained(model_selection)
                 
                 params = {
                     "prompt": edit_prompt,
