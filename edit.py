@@ -2,6 +2,11 @@ import streamlit as st
 import vertexai
 from vertexai.preview.vision_models import ImageGenerationModel, Image
 import typing
+from dotenv import load_dotenv
+import os
+from vertexai.preview.vision_models import ImageGenerationModel, Image
+
+OUTPUT_URI = os.environ.get("OUTPUT_URI", "gs://")
 
 def edit_image_app():
     st.title("Image Editing App")
@@ -36,11 +41,11 @@ def edit_image_app():
         edit_prompt = st.text_input("Prompt")
         edit_negative_prompt = st.text_input("Negative Prompt")
         edit_number_of_images = st.number_input("Number of Images", min_value=1, max_value=8, value=1)
-        edit_guidance_scale = st.slider("Guidance Scale", min_value=0.0, max_value=20.0, value=7.0)
+        edit_guidance_scale = st.slider("Guidance Scale", min_value=0.0, max_value=20.0, value=0.95)
         
         edit_mask_mode = st.selectbox("Mask Mode", [None, "background", "foreground", "semantic"])
         edit_segmentation_classes = st.text_input("Segmentation Classes (comma-separated)")
-        edit_mask_dilation = st.slider("Mask Dilation", min_value=0.0, max_value=1.0, value=0.0)
+        edit_mask_dilation = st.slider("Mask Dilation", min_value=0.0, max_value=1.0, value=0.05)
         
         edit_product_position = st.selectbox("Product Position", [None, "fixed", "reposition"])
         edit_output_mime_type = st.selectbox("Output MIME Type", ["image/png", "image/jpeg"], index=0)
@@ -52,7 +57,7 @@ def edit_image_app():
         
         edit_language = st.text_input("Language")
         edit_seed = st.number_input("Seed", value=None)
-        edit_output_gcs_uri = st.text_input("Output GCS URI")
+        edit_output_gcs_uri = st.text_input("Output GCS URI", value=OUTPUT_URI)
         
         edit_safety_filter_level = st.selectbox(
             "Safety Filter Level",
