@@ -48,7 +48,8 @@
 4. pip install -r requirements.txt
 5. echo EXPORT PROJECT_ID=<your project id> >> .env
 6. echo EXPORT LOCATION=us-central1 >> .env
-7. streamlit run main.py
+7. echo EXPORT OUTPUT_URI=gs://<your ourput bucket name> >> .env
+8. streamlit run main.py
 
 **라이선스:**
 
