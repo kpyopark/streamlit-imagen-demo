@@ -9,6 +9,6 @@ tab1, tab2, tab3, tab4 = st.tabs(["이미지 생성", "업스케일링", "마스
 with tab1:
     generator.main()  # app2.py의 run_app2 함수 호출
 with tab3:
-    edit.edit_image_app()
+    edit.main()
 with tab4:
-    controlled_editing.controlled_editing_tab()
+    controlled_editing.main()

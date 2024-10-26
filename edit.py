@@ -8,7 +8,7 @@ from vertexai.preview.vision_models import ImageGenerationModel, Image
 
 OUTPUT_URI = os.environ.get("OUTPUT_URI", "gs://")
 
-def edit_image_app():
+def main():
     st.title("Image Editing App")
 
     # Create two columns

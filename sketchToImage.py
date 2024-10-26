@@ -4,6 +4,8 @@ import json
 import base64
 import requests
 from vertexai.preview.vision_models import ImageGenerationModel, Image
+from vertexai.preview.generative_models import GenerativeModel, Part
+
 
 load_dotenv()
 
@@ -19,6 +21,91 @@ SUBJECT_IMG_DESCRIPTION = "a model walking with yellow shirts"  # Description of
 TEXT_PROMPT_TEMPLATE = "Create an image about [1] in the pose of control image to match the description: [1] looking at camera, natural human eyes"  # Template for prompt
 NEG_TEXT_PROMPT = "wrinkles, noise, Low quality, dirty, ugly, low res, multi face, nsfw, nude, rough texture, messy, messy background, weird hair, chinese clothes, chinese hair, traditional asia clothes, color background, photo realistic, photo, super realistic, signature, autograph, sign, text, characters, alphabet, letter"
 ENDPOINT_URI = f"{ENDPOINT_URI_PREFIX.format(REGION)}/v1/projects/{CLOUD_PROJECT_ID}/locations/{REGION}/publishers/google/models/imagen-3.0-capability-preview-0930:predict"
+
+def extract_json_value(json_str):
+    start_index = json_str.find('```json') + 7
+    end_index = json_str.find('```', start_index)
+    json_str = json_str[start_index:end_index].strip()
+    return json.loads(json_str)
+
+def call_gemini_for_editing(image_path, prompt):
+    image1 = Part.from_data(
+        mime_type="image/png",
+        data=encode_image(image_path))
+    prompt_template = f"""
+당신은 Imagen을 이용하여 광고 이미지를 구성하는 광고 담당자입니다. 
+주어진 사진에서 사용자의 요청에 맞는 사진으로 수정하기 위한 영문 Imagen 프롬프트를 작성해줘. 
+
+사용자 요청 : {prompt} 
+
+<instructions>
+
+<task1> Analyze the original photo and write a detailed description of it (within 60 tokens). </task1>
+
+<task2> Identify and describe the most central object in the original photo (within 20 tokens). </task2>
+
+<task3> Analyze the user request and identify the edit type:
+STYLE_EDITING: Adjust the entire photo (style, touch, mood, etc.).
+CONTROLLED_EDITING: Maintain the overall image composition but change color, tone, or convert it to a different art style (e.g., Sketch to Image).
+SUBJECT_EDITING: Keep the main object but change its position or background.
+RAW_EDITING: Change the main object itself.
+Store this information in the edit_type variable. </task3>
+
+<task4> Clearly explain the relationship between the user request and the extracted main object or background. Add this explanation to the edit_mode_selection_reason field. </task4>
+
+<task5> Determine the edit mode based on the user request:
+EDIT_MODE_INPAINT_INSERTION: Add to or change the main object or background.
+EDIT_MODE_INPAINT_REMOVAL: Remove the main object or background.
+EDIT_MODE_OUTPAINT: Extend the background.
+NONE: Apply changes to the entire image.
+Store this information in the edit_mode variable. </task5>
+
+<task6> Determine the mask mode:
+NONE: No mask needed for STYLE_EDITING.
+MASK_MODE_FOREGROUND: Mask the main object for edits focused on it.
+MASK_MODE_BACKGROUND: Mask the background for edits focused on it.
+Store this information in the mask_mode variable. </task6>
+
+<task7> Determine the subject type for SUBJECT_EDITING:
+SUBJECT_TYPE_PERSON: If the main object is a person.
+SUBJECT_TYPE_ANIMAL: If the main object is an animal.
+SUBJECT_TYPE_PRODUCT: If the main object is a product.
+SUBJECT_TYPE_DEFAULT: For all other cases.
+Store this information in the subject_type variable. You must use one of the values [SUBJECT_TYPE_PERSON, SUBJECT_TYPE_ANIMAL, SUBJECT_TYPE_PRODUCT, SUBJECT_TYPE_DEFAULT] in the subject_type field. </task7>
+
+<task8> Write prompts in English:
+For STYLE_EDITING, focus on the overall style in the positive prompt (e.g., "Transform the image to have a Digital Stained Glass style").
+For other cases, provide a detailed description of the final desired image in the positive prompt (within 120 tokens) and list any forbidden keywords in the negative prompt. </task8>
+
+<task9> All outputs should be in English. </task9>
+
+</instructions>
+
+<output>
+{{
+  "org_image_description" : ...,
+  "main_object_description" : ...,
+  "edit_type\" : ...,
+  "edit_mode_selection_reason": ...,
+  "edit_mode" : ...,
+  "mask_mode\" : ...,
+  "subject_type\" : ...,
+  "positive_prompt\" : ...,
+  "negative_prompt\" : ...,
+}}
+</output>
+    """
+    model = GenerativeModel("gemini-1.5-flash")
+    response = model.generate_content(
+        [image1, prompt_template],
+        generation_config={
+            "max_output_tokens": 2048,
+            "temperature": 0.5,
+            "top_p": 0.93,
+            "top_k": 32
+        }
+    )
+    return extract_json_value(response.text)
 
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
@@ -64,6 +151,7 @@ def save_images_from_response(response):
         print("Warning: Response does not contain 'predictions'.")
 
 def controlled_editing(prompt, negative_prompt, reference_image_paths, control_type):
+    print('controlled_editing is progressing.')
     access_token = get_access_token()
     reference_images = [encode_image(path) for path in reference_image_paths]
     reference_images_obj = [
@@ -97,9 +185,11 @@ def controlled_editing(prompt, negative_prompt, reference_image_paths, control_t
     images = convert_response_to_image(response)
     return images
 
-def subject_editing(prompt, negative_prompt, subject_image_path):
+
+def subject_editing(prompt, negative_prompt, subject_image_description, subject_image_paths):
+    print('subject_editing is progressing.')
     access_token = get_access_token()
-    subject_img_b64 = encode_image(subject_image_path)
+    subject_img_b64 = encode_image(subject_image_paths[0])
     request_data = {
         "instances": [
             {
@@ -110,27 +200,20 @@ def subject_editing(prompt, negative_prompt, subject_image_path):
                         "referenceId": 1,
                         "referenceImage": {"bytesBase64Encoded": subject_img_b64},
                         "subjectImageConfig": {
-                            "subjectDescription": SUBJECT_IMG_DESCRIPTION,
-                            "subjectType": "SUBJECT_TYPE_PERSON"
+                            "subjectDescription": subject_image_description,
+                            "subjectType": "SUBJECT_TYPE_ANIMAL"
                         }
                     }
-                    # ,
-                    # {
-                    #     "referenceType": "REFERENCE_TYPE_CONTROL",
-                    #     "referenceId": 2,
-                    #     "referenceImage": {"bytesBase64Encoded": facemesh_img_b64},
-                    #     "controlImageConfig": {
-                    #         "controlType": "CONTROL_TYPE_FACE_MESH",
-                    #         "enableControlImageComputation": True
-                    #     }
-                    # }
                 ]
             }
         ],
         "parameters": {
             "negativePrompt": negative_prompt,
             "seed": 1,
-            "sampleCount": 4,
+            "sampleCount": 2,
+            "editConfig": {
+                "baseSteps": 75
+            },
             "promptLanguage": "en",
             "editMode": "EDIT_MODE_DEFAULT"
         }
@@ -139,6 +222,79 @@ def subject_editing(prompt, negative_prompt, subject_image_path):
     images = convert_response_to_image(response)
     return images
 
+def raw_editing(prompt, negative_prompt, edit_mode, mask_mode, dilation, subject_image_paths):
+    print('raw_editing is progressing.')
+    access_token = get_access_token()
+    subject_img_b64 = encode_image(subject_image_paths[0])
+    parameters = {
+            "negativePrompt": negative_prompt,
+            "seed": 1,
+            "sampleCount": 2,
+            "editConfig": {
+                "baseSteps": 75
+            },
+            "promptLanguage": "en",
+        }
+    if edit_mode != "NONE" :
+        parameters["editMode"] = edit_mode
+
+    request_data = {
+        "instances": [
+            {
+                "prompt": prompt,
+                "referenceImages": [
+                    {
+                        "referenceType": "REFERENCE_TYPE_RAW",
+                        "referenceId": 1,
+                        "referenceImage": {"bytesBase64Encoded": subject_img_b64},
+                    },
+                    {
+                        'referenceType': 'REFERENCE_TYPE_MASK',
+                        'referenceId': 2,
+                        'maskImageConfig': {
+                            'maskMode': mask_mode,
+                            'dilation': dilation
+                        }
+                    }
+                ]
+            }
+        ],
+        "parameters": parameters
+    }
+    response = make_prediction_request(ENDPOINT_URI, access_token, request_data)
+    images = convert_response_to_image(response)
+    return images
+
+def style_editing(prompt, negative_prompt, subject_image_paths):
+    print('style_editing is progressing.')
+    access_token = get_access_token()
+    subject_img_b64 = encode_image(subject_image_paths[0])
+    request_data = {
+        "instances": [
+            {
+                "prompt": prompt,
+                "referenceImages": [
+                    {
+                        "referenceType": "REFERENCE_TYPE_RAW",
+                        "referenceId": 1,
+                        "referenceImage": {"bytesBase64Encoded": subject_img_b64},
+                    }
+                ]
+            }
+        ],
+        "parameters": {
+            "negativePrompt": negative_prompt,
+            "seed": 1,
+            "sampleCount": 2,
+            "editConfig": {
+                "baseSteps": 25
+            },
+            "promptLanguage": "en",
+        }
+    }
+    response = make_prediction_request(ENDPOINT_URI, access_token, request_data)
+    images = convert_response_to_image(response)
+    return images
 
 if __name__ == "__main__":
 
