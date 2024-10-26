@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+from pprint import pprint
 import os
 import json
 import base64
@@ -21,6 +22,45 @@ SUBJECT_IMG_DESCRIPTION = "a model walking with yellow shirts"  # Description of
 TEXT_PROMPT_TEMPLATE = "Create an image about [1] in the pose of control image to match the description: [1] looking at camera, natural human eyes"  # Template for prompt
 NEG_TEXT_PROMPT = "wrinkles, noise, Low quality, dirty, ugly, low res, multi face, nsfw, nude, rough texture, messy, messy background, weird hair, chinese clothes, chinese hair, traditional asia clothes, color background, photo realistic, photo, super realistic, signature, autograph, sign, text, characters, alphabet, letter"
 ENDPOINT_URI = f"{ENDPOINT_URI_PREFIX.format(REGION)}/v1/projects/{CLOUD_PROJECT_ID}/locations/{REGION}/publishers/google/models/imagen-3.0-capability-preview-0930:predict"
+
+def remove_reference_image(obj):
+    """
+    재귀적으로 객체를 순회하면서 'referenceImage' 속성을 제거합니다.
+    
+    Args:
+        obj: 처리할 Python 객체 (dict, list, 또는 기본 타입)
+    
+    Returns:
+        referenceImage가 제거된 새로운 객체
+    """
+    # 입력받은 객체의 복사본을 만들어서 원본 데이터 보존
+    if isinstance(obj, dict):
+        new_obj = {}
+        # 딕셔너리의 각 키-값 쌍을 순회
+        for key, value in obj.items():
+            # referenceImage 키는 제외
+            if key != 'referenceImage':
+                # 값에 대해 재귀적으로 처리
+                new_obj[key] = remove_reference_image(value)
+            else:
+                new_obj[key] = "bytes"
+        return new_obj
+    elif isinstance(obj, list):
+        # 리스트의 각 항목에 대해 재귀적으로 처리
+        return [remove_reference_image(item) for item in obj]
+    elif isinstance(obj, tuple):
+        # 튜플의 각 항목에 대해 재귀적으로 처리
+        return tuple(remove_reference_image(item) for item in obj)
+    elif isinstance(obj, set):
+        # 셋의 각 항목에 대해 재귀적으로 처리
+        return {remove_reference_image(item) for item in obj}
+    else:
+        # 기본 타입은 그대로 반환
+        return obj
+    
+def print_request_data(request_data):
+    pprint(remove_reference_image(request_data))
+
 
 def extract_json_value(json_str):
     start_index = json_str.find('```json') + 7
@@ -45,7 +85,7 @@ def call_gemini_for_editing(image_path, prompt):
 <task2> Identify and describe the most central object in the original photo (within 20 tokens). </task2>
 
 <task3> Analyze the user request and identify the edit type:
-STYLE_EDITING: Adjust the entire photo (style, touch, mood, etc.).
+STYLE_EDITING: Change the overall style of the image.
 CONTROLLED_EDITING: Maintain the overall image composition but change color, tone, or convert it to a different art style (e.g., Sketch to Image).
 SUBJECT_EDITING: Keep the main object but change its position or background.
 RAW_EDITING: Change the main object itself.
@@ -75,7 +115,7 @@ Store this information in the subject_type variable. You must use one of the val
 
 <task8> Write prompts in English:
 For STYLE_EDITING, focus on the overall style in the positive prompt (e.g., "Transform the image to have a Digital Stained Glass style").
-For other cases, provide a detailed description of the final desired image in the positive prompt (within 120 tokens) and list any forbidden keywords in the negative prompt. </task8>
+For other cases, provide a detailed description of the final desired image in the positive prompt (within 120 tokens) and list important forbidden keywords in the negative prompt(within 60 Tokens). </task8>
 
 <task9> All outputs should be in English. </task9>
 
@@ -181,6 +221,7 @@ def controlled_editing(prompt, negative_prompt, reference_image_paths, control_t
           'promptLanguage': 'en'
       }
     }
+    print_request_data(request_data)
     response = make_prediction_request(ENDPOINT_URI, access_token, request_data)
     images = convert_response_to_image(response)
     return images
@@ -218,6 +259,7 @@ def subject_editing(prompt, negative_prompt, subject_image_description, subject_
             "editMode": "EDIT_MODE_DEFAULT"
         }
     }
+    print_request_data(request_data)
     response = make_prediction_request(ENDPOINT_URI, access_token, request_data)
     images = convert_response_to_image(response)
     return images
@@ -261,6 +303,7 @@ def raw_editing(prompt, negative_prompt, edit_mode, mask_mode, dilation, subject
         ],
         "parameters": parameters
     }
+    print_request_data(request_data)
     response = make_prediction_request(ENDPOINT_URI, access_token, request_data)
     images = convert_response_to_image(response)
     return images
@@ -292,6 +335,7 @@ def style_editing(prompt, negative_prompt, subject_image_paths):
             "promptLanguage": "en",
         }
     }
+    print_request_data(request_data)
     response = make_prediction_request(ENDPOINT_URI, access_token, request_data)
     images = convert_response_to_image(response)
     return images
