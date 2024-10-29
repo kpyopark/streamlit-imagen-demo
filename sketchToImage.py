@@ -277,32 +277,40 @@ def raw_editing(prompt, negative_prompt, edit_mode, mask_mode, dilation, subject
             },
             "promptLanguage": "en",
         }
+
     if edit_mode != "NONE" :
         parameters["editMode"] = edit_mode
 
+    instance_data = {
+        "prompt": prompt,
+        "referenceImages": [
+            {
+                "referenceType": "REFERENCE_TYPE_RAW",
+                "referenceId": 1,
+                "referenceImage": {"bytesBase64Encoded": subject_img_b64},
+            }
+        ]
+    }
+
+    if edit_mode != "NONE" and mask_mode != "NONE" :
+        instance_data["referenceImages"].append(
+            {
+                'referenceType': 'REFERENCE_TYPE_MASK',
+                'referenceId': 2,
+                'maskImageConfig': {
+                    'maskMode': mask_mode,
+                    'dilation': dilation
+                }
+            }
+        )
+
     request_data = {
         "instances": [
-            {
-                "prompt": prompt,
-                "referenceImages": [
-                    {
-                        "referenceType": "REFERENCE_TYPE_RAW",
-                        "referenceId": 1,
-                        "referenceImage": {"bytesBase64Encoded": subject_img_b64},
-                    },
-                    {
-                        'referenceType': 'REFERENCE_TYPE_MASK',
-                        'referenceId': 2,
-                        'maskImageConfig': {
-                            'maskMode': mask_mode,
-                            'dilation': dilation
-                        }
-                    }
-                ]
-            }
+            instance_data
         ],
         "parameters": parameters
     }
+
     print_request_data(request_data)
     response = make_prediction_request(ENDPOINT_URI, access_token, request_data)
     images = convert_response_to_image(response)
