@@ -139,8 +139,8 @@ For other cases, provide a detailed description of the final desired image in th
     response = model.generate_content(
         [image1, prompt_template],
         generation_config={
-            "max_output_tokens": 2048,
-            "temperature": 0.5,
+            "max_output_tokens": 4192,
+            "temperature": 0.6,
             "top_p": 0.93,
             "top_k": 32
         }
@@ -217,7 +217,7 @@ def controlled_editing(prompt, negative_prompt, reference_image_paths, control_t
       'parameters': {
           'negativePrompt': negative_prompt,
           'seed': 1000,
-          'sampleCount': 1,
+          'sampleCount': 4,
           'promptLanguage': 'en'
       }
     }
