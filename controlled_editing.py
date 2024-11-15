@@ -158,8 +158,11 @@ def main():
             index=mask_modes.index(st.session_state.extracted_params.get('mask_mode', "NONE")),
             key="controlled_edited_mask_mode"
         )
+
+        seed = st.text_input(label='seed value')
         
-        controlled_edited_dilation = st.slider("Mask Dilation", min_value=0.0, max_value=1.0, value=0.03)
+        controlled_edited_dilation = st.slider("Mask Dilation", min_value=0.0, max_value=1.0, value=0.005, step=0.001)
+        st.write('value : {:.3f}'.format(controlled_edited_dilation))
 
         # 이미지 수정 버튼
         if st.button("이미지 수정", key="controlled_edited_modify_button"):
@@ -179,7 +182,8 @@ def main():
                             controlled_edited_edit_mode,
                             controlled_edited_mask_mode,
                             controlled_edited_dilation,
-                            controlled_edited_image_paths
+                            controlled_edited_image_paths, 
+                            seed=seed
                         )
                     elif controlled_edited_edit_type == "STYLE_EDITING":
                         controlled_edited_results = sketchToImage.style_editing(

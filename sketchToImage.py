@@ -264,14 +264,14 @@ def subject_editing(prompt, negative_prompt, subject_image_description, subject_
     images = convert_response_to_image(response)
     return images
 
-def raw_editing(prompt, negative_prompt, edit_mode, mask_mode, dilation, subject_image_paths):
+def raw_editing(prompt, negative_prompt, edit_mode, mask_mode, dilation, subject_image_paths, seed):
     print('raw_editing is progressing.')
     access_token = get_access_token()
     subject_img_b64 = encode_image(subject_image_paths[0])
     parameters = {
             "negativePrompt": negative_prompt,
-            "seed": 1,
-            "sampleCount": 2,
+            "seed": int(seed),
+            "sampleCount": 4,
             "editConfig": {
                 "baseSteps": 75
             },
