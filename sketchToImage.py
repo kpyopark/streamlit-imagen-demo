@@ -117,7 +117,14 @@ Store this information in the subject_type variable. You must use one of the val
 For STYLE_EDITING, focus on the overall style in the positive prompt (e.g., "Transform the image to have a Digital Stained Glass style").
 For other cases, provide a detailed description of the final desired image in the positive prompt (within 120 tokens) and list important forbidden keywords in the negative prompt(within 60 Tokens). </task8>
 
-<task9> All outputs should be in English. </task9>
+<task9> Guidance scale is a value that indicates the degree of influence a prompt has on an image. 
+When modifying the foreground, a value between 0.8 and 1.0 is generally used, while for background modifications, a value greater than 1.0 is used. 
+Especially when the difference between the existing background and the desired background is significant during background modification, the guidance scale can be increased up to 20.0 to strengthen the influence of the prompt.</task9>
+
+<task10> The Mask Dilation value determines the degree to which the original image is reflected in the resulting image. 
+For minimal modifications to the original image, a value of 0.005 is recommended. For more significant alterations, a maximum value of 0.03 is appropriate. </task10>
+
+<task11> All outputs should be in English. </task11>
 
 </instructions>
 
@@ -125,13 +132,15 @@ For other cases, provide a detailed description of the final desired image in th
 {{
   "org_image_description" : ...,
   "main_object_description" : ...,
-  "edit_type\" : ...,
+  "edit_type" : ...,
   "edit_mode_selection_reason": ...,
   "edit_mode" : ...,
-  "mask_mode\" : ...,
-  "subject_type\" : ...,
-  "positive_prompt\" : ...,
-  "negative_prompt\" : ...,
+  "mask_mode" : ...,
+  "subject_type" : ...,
+  "positive_prompt" : ...,
+  "negative_prompt" : ...,
+  "guidance_scale" : ...,
+  "mask_dilation" : ...
 }}
 </output>
     """
