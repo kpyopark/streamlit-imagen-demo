@@ -49,7 +49,7 @@ The application is divided into four main tabs:
 
 1.  Clone this repository:
     ```bash
-    git clone https://github.com/markpark02/streamlit-imagen-demo.git
+    git clone https://github.com/kpyopark/streamlit-imagen-demo.git
     cd streamlit-imagen-demo
     ```
 2.  Install dependencies:
