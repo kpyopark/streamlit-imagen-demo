@@ -21,7 +21,7 @@ SUBJECT_IMG_DESCRIPTION = "a model walking with yellow shirts"  # Description of
 #TEXT_PROMPT_TEMPLATE = "Create an image about [1] in the pose of control image [2] to match the description: A pencil style sketch of a full-body portrait of [1] with hatch-cross drawing, hatch drawing of portrait with 6B and graphite pencils, white background, pencil drawing, high quality, pencil stroke, looking at camera, natural human eyes"  # Template for prompt
 TEXT_PROMPT_TEMPLATE = "Create an image about [1] in the pose of control image to match the description: [1] looking at camera, natural human eyes"  # Template for prompt
 NEG_TEXT_PROMPT = "wrinkles, noise, Low quality, dirty, ugly, low res, multi face, nsfw, nude, rough texture, messy, messy background, weird hair, chinese clothes, chinese hair, traditional asia clothes, color background, photo realistic, photo, super realistic, signature, autograph, sign, text, characters, alphabet, letter"
-ENDPOINT_URI = f"{ENDPOINT_URI_PREFIX.format(REGION)}/v1/projects/{CLOUD_PROJECT_ID}/locations/{REGION}/publishers/google/models/imagen-3.0-capability-preview-0930:predict"
+ENDPOINT_URI = f"{ENDPOINT_URI_PREFIX.format(REGION)}/v1/projects/{CLOUD_PROJECT_ID}/locations/{REGION}/publishers/google/models/imagen-3.0-capability-001:predict"
 
 def remove_reference_image(obj):
     """
