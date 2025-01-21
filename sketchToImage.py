@@ -145,9 +145,10 @@ Especially when the difference between the existing background and the desired b
 <task10> The Mask Dilation value determines the degree to which the original image is reflected in the resulting image. 
 For minimal modifications to the original image, a value of 0.005 is recommended. For more significant alterations, a maximum value of 0.03 is appropriate. </task10>
 
-<task11> Control Type(control_type) is a value that determines the type of the given image. Choose one of the following values:
+<task11> control_type is a value that determines the type of the given image. Choose one of the following values:
 CONTROL_TYPE_SCRIBBLE : when the original image is a scribble map. 
 CONTROL_TYPE_CANNY : when the original image is a Canny edge map. 
+If there is no matching value, use CONTROL_TYPE_SCRIBBLE.
 The value of control_type MUST be one of the following: [CONTROL_TYPE_SCRIBBLE, CONTROL_TYPE_CANNY].
 </task11>
 
