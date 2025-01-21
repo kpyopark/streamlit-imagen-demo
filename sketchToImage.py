@@ -84,12 +84,30 @@ def call_gemini_for_editing(image_path, prompt):
 
 <task2> Identify and describe the most central object in the original photo (within 20 tokens). </task2>
 
-<task3> Analyze the user request and identify the edit type:
-STYLE_EDITING: Change the overall style of the image.
-CONTROLLED_EDITING: Maintain the overall image composition but change color, tone, or convert it to a different art style (e.g., Sketch to Image).
-SUBJECT_EDITING: Keep the main object but change its position or background.
-RAW_EDITING: Change the main object itself.
-Store this information in the edit_type variable. </task3>
+<task3> 
+Analyze the user request and identify the edit type:
+
+* SUBJECT_EDITING: Keep the main object but change its position or background. 
+    * (e.g., "Generate an image of the girl[1] with a happy expression, looking directly at the camera. Her head should be tilted slightly to the right.")
+
+* STYLE_EDITING: Generate an image with the given style image. 
+    * **DO NOT USE THIS EDITING MODE.** 
+    * (e.g., "Generate an image in mosaic style [1] based on the following caption : Brilliant NY City skylines.") 
+
+* CONTROLLED_EDITING: Maintain the overall image composition but change color, tone, or convert edge/scribble map to image. 
+    * (e.g., "Generate an image aligning with the scribble map [1] to match the description: This image shows the iconic Eiffel Tower in Paris, France, with a beautiful sunset in the background.")
+
+* INSTRUCT_EDITING: Change overall image composition and art/cartoon style. 
+    * If the new editing prompt requires a very significant change to a main object (e.g., 1 cat into 3 dogs), use INSTRUCT_EDITING. 
+    * (e.g., "Transform the subject in image [1] into a cartoon character with a big smile and a colorful outfit.")
+
+* EDIT_MODE_DEFAULT: 
+    * If the new prompt requires a change to a main object (change from a cat into a dog - the size of the changed main object is similar to the original object), use EDIT_MODE_DEFAULT. 
+    * If the original image doesn't appear clear (e.g., oil painting, pencil drawing), please choose INSTRUCT_EDITING instead of EDIT_MODE_DEFAULT. 
+    * (e.g., "Change the background of the image to a beautiful sunset scene.", "Change the animal in the image from a cat to a dog.")
+
+Store this information in the `edit_type` variable. 
+</task3>
 
 <task4> Clearly explain the relationship between the user request and the extracted main object or background. Add this explanation to the edit_mode_selection_reason field. </task4>
 
@@ -113,18 +131,29 @@ SUBJECT_TYPE_PRODUCT: If the main object is a product.
 SUBJECT_TYPE_DEFAULT: For all other cases.
 Store this information in the subject_type variable. You must use one of the values [SUBJECT_TYPE_PERSON, SUBJECT_TYPE_ANIMAL, SUBJECT_TYPE_PRODUCT, SUBJECT_TYPE_DEFAULT] in the subject_type field. </task7>
 
-<task8> Write prompts in English:
-For STYLE_EDITING, focus on the overall style in the positive prompt (e.g., "Transform the image to have a Digital Stained Glass style").
-For other cases, provide a detailed description of the final desired image in the positive prompt (within 120 tokens) and list important forbidden keywords in the negative prompt(within 60 Tokens). </task8>
+<task8> Write a imagen positive_prompt in English:
+For SUBJECT_EDITING, make a prompt that describes the final desired image in the positive prompt with reference id. (e.g., "Generate an image of the girl[1] with a happy expression, lookin directly at the camera. Her head should be tilted slightly to the right")
+For STYLE_EDITING, make a prompt that describe the final desired image with given reference style image ID. (e.g., "Generate an image in mosaic stle [1] based on the following caption : Brilliant NY City skylines.").
+For CONTROLLED_EDITING, provide a detailed description of the final desired image with reference image ID. (e.g., "Generate an image aligning with the scribble map [1] to match the description: This image shows the iconic Eiffel Tower in Paris, France, with a beautiful sunset in the background.")
+For INSTRUCT_EDITING, provide a command ('Transfer the subject in images[1] into a ...') and detailed description of the final desired image with reference image ID. (e.g., "Transform the subject in image [1] into a cartoon character with a big smile and a colorful outfit.")
+In other cases, provide a detailed description of the final desired image in the positive prompt (within 120 tokens) and list important forbidden keywords in the negative prompt(within 60 Tokens). </task8>
 
 <task9> Guidance scale is a value that indicates the degree of influence a prompt has on an image. 
-When modifying the foreground, a value between 0.8 and 1.0 is generally used, while for background modifications, a value greater than 1.0 is used. 
+When modifying the foreground, a value - 1.0 is generally used, while for background modifications, a value greater than 1.0 is used - generally 20. 
 Especially when the difference between the existing background and the desired background is significant during background modification, the guidance scale can be increased up to 20.0 to strengthen the influence of the prompt.</task9>
 
 <task10> The Mask Dilation value determines the degree to which the original image is reflected in the resulting image. 
 For minimal modifications to the original image, a value of 0.005 is recommended. For more significant alterations, a maximum value of 0.03 is appropriate. </task10>
 
-<task11> All outputs should be in English. </task11>
+<task11> Control Type(control_type) is a value that determines the type of the given image. Choose one of the following values:
+CONTROL_TYPE_SCRIBBLE : when the original image is a scribble map. 
+CONTROL_TYPE_CANNY : when the original image is a Canny edge map. 
+The value of control_type MUST be one of the following: [CONTROL_TYPE_SCRIBBLE, CONTROL_TYPE_CANNY].
+</task11>
+
+<task12> All outputs should be in English. </task12>
+
+<task13> Please DO NOT REPEAT same words in the negative prompt. </task13>
 
 </instructions>
 
@@ -140,7 +169,8 @@ For minimal modifications to the original image, a value of 0.005 is recommended
   "positive_prompt" : ...,
   "negative_prompt" : ...,
   "guidance_scale" : ...,
-  "mask_dilation" : ...
+  "mask_dilation" : ...,
+  "control_type" : ...
 }}
 </output>
     """
@@ -206,7 +236,7 @@ def controlled_editing(prompt, negative_prompt, reference_image_paths, control_t
     reference_images_obj = [
       {
         'referenceType': 'REFERENCE_TYPE_CONTROL',
-        'referenceId': index,
+        'referenceId': index + 1,
         'referenceImage': {
           'bytesBase64Encoded': img_bytes
         },
@@ -236,7 +266,7 @@ def controlled_editing(prompt, negative_prompt, reference_image_paths, control_t
     return images
 
 
-def subject_editing(prompt, negative_prompt, subject_image_description, subject_image_paths):
+def subject_editing(prompt, negative_prompt, subject_image_description, subject_image_paths, subject_type):
     print('subject_editing is progressing.')
     access_token = get_access_token()
     subject_img_b64 = encode_image(subject_image_paths[0])
@@ -251,7 +281,7 @@ def subject_editing(prompt, negative_prompt, subject_image_description, subject_
                         "referenceImage": {"bytesBase64Encoded": subject_img_b64},
                         "subjectImageConfig": {
                             "subjectDescription": subject_image_description,
-                            "subjectType": "SUBJECT_TYPE_ANIMAL"
+                            "subjectType": subject_type
                         }
                     }
                 ]
@@ -273,8 +303,8 @@ def subject_editing(prompt, negative_prompt, subject_image_description, subject_
     images = convert_response_to_image(response)
     return images
 
-def raw_editing(prompt, negative_prompt, edit_mode, mask_mode, dilation, subject_image_paths, seed):
-    print('raw_editing is progressing.')
+def instruct_editing(prompt, negative_prompt, subject_image_paths, seed):
+    print('instruct_editing is progressing.')
     access_token = get_access_token()
     subject_img_b64 = encode_image(subject_image_paths[0])
     parameters = {
@@ -285,6 +315,44 @@ def raw_editing(prompt, negative_prompt, edit_mode, mask_mode, dilation, subject
                 "baseSteps": 75
             },
             "promptLanguage": "en",
+        }
+
+    instance_data = {
+        "prompt": prompt,
+        "referenceImages": [
+            {
+                "referenceType": "REFERENCE_TYPE_RAW",
+                "referenceId": 1,
+                "referenceImage": {"bytesBase64Encoded": subject_img_b64},
+            }
+        ]
+    }
+
+    request_data = {
+        "instances": [
+            instance_data
+        ],
+        "parameters": parameters
+    }
+
+    print_request_data(request_data)
+    response = make_prediction_request(ENDPOINT_URI, access_token, request_data)
+    images = convert_response_to_image(response)
+    return images
+
+def default_editing(prompt, negative_prompt, edit_mode, mask_mode, dilation, subject_image_paths, seed, guidance_scale):
+    print('default_editing is progressing.')
+    access_token = get_access_token()
+    subject_img_b64 = encode_image(subject_image_paths[0])
+    parameters = {
+            "negativePrompt": negative_prompt,
+            "seed": int(seed),
+            "sampleCount": 4,
+            "editConfig": {
+                "baseSteps": 75
+            },
+            "promptLanguage": "en",
+            "guidanceScale": int(guidance_scale)
         }
 
     if edit_mode != "NONE" :
@@ -325,7 +393,7 @@ def raw_editing(prompt, negative_prompt, edit_mode, mask_mode, dilation, subject
     images = convert_response_to_image(response)
     return images
 
-def style_editing(prompt, negative_prompt, subject_image_paths):
+def style_editing(prompt, negative_prompt, subject_image_paths, style_description):
     print('style_editing is progressing.')
     access_token = get_access_token()
     subject_img_b64 = encode_image(subject_image_paths[0])
@@ -335,9 +403,12 @@ def style_editing(prompt, negative_prompt, subject_image_paths):
                 "prompt": prompt,
                 "referenceImages": [
                     {
-                        "referenceType": "REFERENCE_TYPE_RAW",
+                        "referenceType": "REFERENCE_TYPE_STYLE",
                         "referenceId": 1,
                         "referenceImage": {"bytesBase64Encoded": subject_img_b64},
+                        "styleImageConfig": {
+                            "styleDescription": style_description
+                        }
                     }
                 ]
             }

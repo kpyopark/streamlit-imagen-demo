@@ -15,7 +15,7 @@ def initialize_session_state():
             'control_type': 'CONTROL_TYPE_CANNY',
             'mask_mode': 'NONE',
             'edit_mode': 'NONE',
-            'edit_type': 'RAW_EDITING',
+            'edit_type': 'EDIT_MODE_DEFAULT',
         }
 
 def main():
@@ -88,9 +88,9 @@ def main():
         # 에디트 모드 선택 (extracted_params의 값을 기본값으로 사용)
         controlled_edited_edit_type = st.selectbox(
             "Edit type 선택",
-            ["CONTROLLED_EDITING", "SUBJECT_EDITING", "RAW_EDITING", "STYLE_EDITING"],
-            index=["CONTROLLED_EDITING", "SUBJECT_EDITING", "RAW_EDITING", "STYLE_EDITING"].index(
-                st.session_state.extracted_params.get('edit_type', "RAW_EDITING")
+            ["SUBJECT_EDITING", "STYLE_EDITING", "CONTROLLED_EDITING", "INSTRUCT_EDITING", "EDIT_MODE_DEFAULT"],
+            index=["SUBJECT_EDITING", "STYLE_EDITING", "CONTROLLED_EDITING", "INSTRUCT_EDITING", "EDIT_MODE_DEFAULT"].index(
+                st.session_state.extracted_params.get('edit_type', "EDIT_MODE_DEFAULT")
             ),
             key="controlled_edited_edit_type"
         )
@@ -142,7 +142,7 @@ def main():
         )
         
         # 컨트롤 타입
-        control_types = ["CONTROL_TYPE_CANNY", "CONTROL_TYPE_SCRIBBLE"]
+        control_types = ["NONE", "CONTROL_TYPE_CANNY", "CONTROL_TYPE_SCRIBBLE"]
         controlled_edited_control_type = st.selectbox(
             "컨트롤 타입 선택",
             control_types,
@@ -159,11 +159,12 @@ def main():
             key="controlled_edited_mask_mode"
         )
 
-        seed = st.text_input(label='seed value')
+        seed = st.text_input(label='seed value', value=1)
         
         controlled_edited_dilation = st.slider("Mask Dilation", min_value=0.0, max_value=1.0, value=0.005, step=0.001)
         st.write('value : {:.3f}'.format(controlled_edited_dilation))
-
+        controlled_edited_guidance_scale = st.slider("Guidance Scale", min_value=0, max_value=600, value=1, step=1)
+        st.write('value : {}'.format(controlled_edited_guidance_scale))
         # 이미지 수정 버튼
         if st.button("이미지 수정", key="controlled_edited_modify_button"):
             if controlled_edited_image_paths:
@@ -173,23 +174,15 @@ def main():
                             controlled_edited_prompt,
                             controlled_edited_negative_prompt,
                             controlled_edited_org_description,
-                            controlled_edited_image_paths
-                        )
-                    elif controlled_edited_edit_type == "RAW_EDITING":
-                        controlled_edited_results = sketchToImage.raw_editing(
-                            controlled_edited_prompt,
-                            controlled_edited_negative_prompt,
-                            controlled_edited_edit_mode,
-                            controlled_edited_mask_mode,
-                            controlled_edited_dilation,
-                            controlled_edited_image_paths, 
-                            seed=seed
+                            controlled_edited_image_paths,
+                            controlled_edited_subject_type
                         )
                     elif controlled_edited_edit_type == "STYLE_EDITING":
                         controlled_edited_results = sketchToImage.style_editing(
                             controlled_edited_prompt,
                             controlled_edited_negative_prompt,
-                            controlled_edited_image_paths
+                            controlled_edited_image_paths,
+                            controlled_edited_org_description
                         )
                     elif controlled_edited_edit_type == "CONTROLLED_EDITING":
                         controlled_edited_results = sketchToImage.controlled_editing(
@@ -197,6 +190,24 @@ def main():
                             controlled_edited_negative_prompt,
                             controlled_edited_image_paths,
                             controlled_edited_control_type
+                        )
+                    elif controlled_edited_edit_type == "INSTRUCT_EDITING":
+                        controlled_edited_results = sketchToImage.instruct_editing(
+                            controlled_edited_prompt,
+                            controlled_edited_negative_prompt,
+                            controlled_edited_image_paths,
+                            seed
+                        )
+                    elif controlled_edited_edit_type == "EDIT_MODE_DEFAULT":
+                        controlled_edited_results = sketchToImage.default_editing(
+                            controlled_edited_prompt,
+                            controlled_edited_negative_prompt,
+                            controlled_edited_edit_mode,
+                            controlled_edited_mask_mode,
+                            controlled_edited_dilation,
+                            controlled_edited_image_paths, 
+                            seed, 
+                            controlled_edited_guidance_scale
                         )
                     else:
                         print("Wrong Editing Mode.")
