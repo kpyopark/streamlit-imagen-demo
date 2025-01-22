@@ -73,10 +73,10 @@ def call_gemini_for_editing(image_path, prompt):
         mime_type="image/png",
         data=encode_image(image_path))
     prompt_template = f"""
-당신은 Imagen을 이용하여 광고 이미지를 구성하는 광고 담당자입니다. 
-주어진 사진에서 사용자의 요청에 맞는 사진으로 수정하기 위한 영문 Imagen 프롬프트를 작성해줘. 
+You're an advertising professional utilizing Imagen for ad creation. 
+Generate an English Imagen prompt that will transform the provided image to meet the user's specifications.
 
-사용자 요청 : {prompt} 
+User Request: {prompt} 
 
 <instructions>
 
