@@ -70,19 +70,19 @@ def resize_and_clip_image(image_path, output_path):
 
 
 def call_gemini(prompt, instruction):
-    prompt_template = f"""당신은 Imagen을 이용하여 광고 이미지를 구성하는 광고 담당자입니다. 
-주어진 사용자 프롬프트를 분석하여 Imagen에서 그릴 수 있는 좋은 프롬프트로 변경해주세요.
-결과는 json 형태로 나와야 하며, positive와 negative 두 개의 키가 있어야 합니다. 모든 결과는 영문으로 생성해주세요.
+    prompt_template = f"""You are an advertising specialist using Imagen to create advertising images. 
+Analyze the given user prompt and transform it into a well-formed prompt suitable for Imagen. 
+The output should be in JSON format and must contain two keys: "positive" and "negative". All results must be generated in English.
 
-세부 인스트럭션을 따라서, output을 생성해 주세요. 
+Based on the detailed instructions, generate the output.
 
-<사용자 프롬프트>
+<User Prompt>
 {prompt}
-</사용자 프롬프트>
+</User Prompt>
 
-<세부 인스트럭션>
+<Detailed Instructions>
 {instruction}
-</세부 인스트럭션>
+</Detailed Instructions>
     """
     model = GenerativeModel("gemini-1.5-flash")
     response = model.generate_content(
@@ -146,7 +146,7 @@ def update_file_path(img_path, mime_type):
     return upscaled_img_path
 
 def main():
-    #st.set_page_config(layout="wide")
+    # st.set_page_config(layout="wide")
 
     if 'generated_images' not in st.session_state:
         st.session_state.generated_images = []
@@ -154,120 +154,120 @@ def main():
     left_column, right_column = st.columns([1, 2])
 
     with left_column:
-        st.title("프롬프트 분석")
+        st.title("Prompt Analysis")
 
-        user_prompt = st.text_input("이미지를 생성할 프롬프트를 입력하세요:")
+        user_prompt = st.text_input("Enter the prompt for generating the image:")
 
         display_options = [
-            "원문 유지",
-            "묘사적 서술",
-            "키워드 중심",
-            "세부 스펙 포함",
-            "저작권 고려",
-            "사용자 입력"
+            "Keep Original",
+            "Descriptive Narration",
+            "Keyword Focus",
+            "Detailed Specifications",
+            "Copyright Considerations",
+            "User Input"
         ]
 
-        # 실제 프롬프트에 사용될 상세 내용
+        # Detailed content to be used in the actual prompt
         prompt_templates = {
-            "원문 유지": """
-        이미지 생성시 다음 사항을 준수해주세요:
-        1. 원문의 문장 구조와 표현을 최대한 그대로 유지
-        2. 불필요한 부가 설명이나 수식어구 최소화
-        3. 원문의 맥락과 의도를 정확하게 반영
-        4. 이미지 생성에 필수적인 세부 사항만 추가
+            "Keep Original": """
+        When generating the image, please adhere to the following guidelines:
+        1. Maintain the original sentence structure and expression as much as possible.
+        2. Minimize unnecessary additional explanations or modifiers.
+        3. Accurately reflect the original context and intent.
+        4. Add only essential details for image generation.
 
-        원문: {text}
+        Original Text: {text}
         """,
             
-            "묘사적 서술": """
-        다음 지침에 따라 원문을 상세하게 재구성해주세요:
-        1. 장면의 전반적인 분위기와 감성을 구체적으로 묘사
-        2. 등장 요소들의 외형, 질감, 상태를 자세히 서술
-        3. 공간감과 원근감을 표현하는 서술 추가
-        4. 조명, 그림자, 시간대 등 환경적 요소 포함
-        5. 감각적 표현과 은유적 표현 적절히 활용
+            "Descriptive Narration": """
+        Please reconstruct the original text in detail, following these guidelines:
+        1. Specifically describe the overall atmosphere and emotion of the scene.
+        2. Describe the appearance, texture, and condition of the elements in detail.
+        3. Add descriptions that express a sense of space and perspective.
+        4. Include environmental elements such as lighting, shadows, and time of day.
+        5. Appropriately utilize sensory and metaphorical expressions.
 
-        원문: {text}
+        Original Text: {text}
         """,
             
-            "키워드 중심": """
-        원문에서 다음 요소들을 중심으로 프롬프트를 재구성해주세요:
-        1. 핵심 주체/객체 추출
-        2. 주요 행동과 상태 식별
-        3. 중요 배경 요소 파악
-        4. 분위기를 결정짓는 핵심 수식어 선별
-        5. 각 키워드 간의 관계성 명시
+            "Keyword Focus": """
+        Please reconstruct the prompt focusing on the following elements from the original text:
+        1. Extract the core subjects/objects.
+        2. Identify key actions and states.
+        3. Identify important background elements.
+        4. Select key modifiers that determine the atmosphere.
+        5. Clearly state the relationships between each keyword.
 
-        추출된 키워드들을 자연스럽게 연결하여 구성
+        Connect the extracted keywords naturally to construct the prompt.
 
-        원문: {text}
+        Original Text: {text}
         """,
             
-            "세부 스펙 포함": """
-        다음의 기술적 세부사항을 포함하여 프롬프트를 작성해주세요:
+             "Detailed Specifications": """
+        Please construct the prompt including the following technical specifications:
 
-        [스타일 사양]
-        - 이미지 스타일: (사진/일러스트/3D 등)
-        - 아트 스타일: (사실적/만화적/초현실적 등)
-        - 렌더링 스타일: 유화 같이 너무 범위가 넓을 경우, 특정 작가/작품 스타일로 명확하게 지정해줘. 
+        [Style Specifications]
+        - Image Style: (Photo/Illustration/3D, etc.)
+        - Art Style: (Realistic/Cartoonish/Surreal, etc.)
+        - Rendering Style: If it's too broad like "oil painting," please specify a particular artist/artwork style.
 
-        [카메라/구도 사양]
-        - 촬영 각도: (정면/측면/부감/앙감)
-        - 화각: (광각/표준/망원)
-        - 거리: (클로즈업/중간/원경)
+        [Camera/Composition Specifications]
+        - Shooting Angle: (Front/Side/Overhead/Low Angle)
+        - Focal Length: (Wide-angle/Standard/Telephoto)
+        - Distance: (Close-up/Medium/Long Shot)
 
-        [이미지 품질 사양]
-        - 해상도: (8K/4K/FHD)
-        - 디테일 수준: (초고해상도/일반/러프)
-        - 노이즈/그레인: (없음/자연스러운/스타일리시)
+        [Image Quality Specifications]
+        - Resolution: (8K/4K/FHD)
+        - Level of Detail: (Ultra-High Resolution/Normal/Rough)
+        - Noise/Grain: (None/Natural/Stylized)
 
-        [색감/조명 사양]
-        - 주조색: (따뜻한/차가운/모노톤)
-        - 조명 스타일: (자연광/인공광/드라마틱)
-        - 명암 대비: (강한/부드러운/평이한)
+        [Color/Lighting Specifications]
+        - Dominant Color: (Warm/Cool/Monotone)
+        - Lighting Style: (Natural/Artificial/Dramatic)
+        - Contrast: (Strong/Soft/Flat)
 
-        원문: {text}
+        Original Text: {text}
         """,
             
-            "저작권 고려": """
-        다음 지침에 따라 저작권을 고려한 프롬프트를 생성해주세요:
+            "Copyright Considerations": """
+        Please generate a copyright-aware prompt according to the following guidelines:
 
-        [저작권 요소 처리 기준]
-        1. 브랜드/로고
-        - 구체적 명칭 → 일반적 형태 묘사
-        - 예: "코카콜라 로고" → "붉은색 필기체 로고"
+        [Copyright Element Handling Guidelines]
+        1. Brands/Logos
+        - Specific names → general form descriptions
+        - Example: "Coca-Cola logo" → "red cursive logo"
 
-        2. 캐릭터
-        - 고유명 → 일반적 특징 묘사
-        - 예: "피카츄" → "노란색 몬스터 캐릭터", "스타워즈" → "우주 배경 미래 전투"
+        2. Characters
+        - Proper names → general characteristic descriptions
+        - Example: "Pikachu" → "yellow monster character", "Star Wars" → "space-themed future battle"
 
-        3. 상표/디자인
-        - 특정 제품명 → 제품 유형과 특징
-        - 예: "아이폰" → "현대적 디자인의 스마트폰"
+        3. Trademarks/Designs
+        - Specific product names → product type and features
+        - Example: "iPhone" → "a smartphone with a modern design"
 
-        4. 예술작품
-        - 구체적 작품명 → 스타일과 주제 묘사
-        - 예: "모나리자" → "르네상스 스타일의 여인 초상화"
+        4. Artworks
+        - Specific artwork names → style and theme descriptions
+        - Example: "Mona Lisa" → "a portrait of a woman in the Renaissance style"
 
-        5. PG19
-        - 잔인하거나, Gore한 느낌이 나는 경우, 그 이미지의 느낌만 가져오고 세부적인 사건 묘사는 제거해줘. 
-        - 예 : "비내리는 피가 낭자한 사건 사진" → "비가 내리고 있는 어두운 느낌의 골목 사진" 
+        5. PG19 Content
+        - If the content is violent or gore-like, extract only the feeling of the image and remove the specific event descriptions.
+        - Example: "A photograph of a bloody scene in the rain" → "a photograph of a dark alley in the rain"
 
-        6. 기타
-        - 너무 광범위한 스타일의 그림 (예를 들면 유화)은 특정 작가나 작품 스타일로 명확하게 지정해줘.
+        6. Other
+        - If the drawing style is too broad (e.g., oil painting), specify the particular artist or artwork style clearly.
 
-        원문: {text}
+        Original Text: {text}
         """,
             
-            "사용자 입력": "{text}"  # 사용자 정의 프롬프트는 그대로 사용
+            "User Input": "{text}"  # Use user-defined prompt as is
         }
 
         # Streamlit UI
-        selected_display_option = st.selectbox("프롬프트 재해석 옵션", display_options)
+        selected_display_option = st.selectbox("Prompt Reinterpretation Option", display_options)
 
-        # 사용자 입력 옵션일 경우
-        if selected_display_option == "사용자 입력":
-            user_prompt = st.text_area("원하는 프롬프트 형식을 입력하세요")
+        # If user input option is selected
+        if selected_display_option == "User Input":
+            user_prompt = st.text_area("Enter your desired prompt format:")
             final_prompt_template = user_prompt
         else:
             final_prompt_template = prompt_templates[selected_display_option]
@@ -277,21 +277,21 @@ def main():
             "4:3",
             "1:1"
         ]
-        selected_aspect_ratio = st.selectbox("종횡비 선택", aspect_ratio_options)
+        selected_aspect_ratio = st.selectbox("Select Aspect Ratio", aspect_ratio_options)
 
-        if final_prompt_template == "사용자 입력":
-            user_input = st.text_area("임시 재해석 옵션 프롬프트를 입력하세요")
+        if final_prompt_template == "User Input":
+             user_input = st.text_area("Enter the prompt for temporary reinterpretation")
         else:
             user_input = None
 
-        if st.button("분석"):
+        if st.button("Analyze"):
             if user_prompt and final_prompt_template:
-                if final_prompt_template == "사용자 입력":
+                if final_prompt_template == "User Input":
                     result = call_gemini(user_prompt, user_input)
                 else:
                     result = call_gemini(user_prompt, final_prompt_template)
 
-                st.subheader("분석 결과")
+                st.subheader("Analysis Result")
                 try:
                     json_result = extract_json_value(result)
                     st.json(json_result)
@@ -314,33 +314,34 @@ def main():
 
                 except json.JSONDecodeError:
                     st.text(result)
-
-        st.subheader("Upscale 설정")
-        upscale_type = st.selectbox("Upscale 방식", ["new_size", "upscale_factor"])
+        
+        st.subheader("Upscale Settings")
+        upscale_type = st.selectbox("Upscale Method", ["new_size", "upscale_factor"])
         
         if upscale_type == "new_size":
-            new_size = st.text_input("새 크기 입력 (예: 1024x1024)")
+            new_size = st.text_input("Enter new size (e.g., 1024x1024)")
         else:
-            upscale_factor = st.selectbox("Upscale 배수", ["x2", "x4"])
+             upscale_factor = st.selectbox("Upscale Factor", ["x2", "x4"])
 
         mime_type = st.selectbox("Mime Type", ["image/png", "image/jpeg"])
-        upscale_model = st.selectbox("Upscale 모델", ["imagen2", "imagen3"])
+        upscale_model = st.selectbox("Upscale Model", ["imagen2", "imagen3"])
+
 
     with right_column:
-        st.title("생성된 이미지")
+        st.title("Generated Images")
         if st.session_state.generated_images:
             for i, (model_name, img_path, resolution) in enumerate(st.session_state.generated_images):
-                st.subheader(f"{model_name} 결과 {i%2 + 1}")
+                st.subheader(f"{model_name} Result {i%2 + 1}")
                 
                 # Apply resize_and_clip_image function
                 resized_img_path = f'resized_{img_path}'
                 resized_img_path = resize_and_clip_image(img_path, resized_img_path)
-                
+
                 st.image(resized_img_path, use_column_width=True)
                 new_resolution = get_image_resolution(resized_img_path)
-                st.caption(f"원본 해상도: {resolution[0]}x{resolution[1]}")
-                st.caption(f"조정된 해상도: {new_resolution[0]}x{new_resolution[1]}")
-                
+                st.caption(f"Original Resolution: {resolution[0]}x{resolution[1]}")
+                st.caption(f"Adjusted Resolution: {new_resolution[0]}x{new_resolution[1]}")
+
                 upscale_key = f"upscale_{model_name}_{i}"
                 if st.button(f"Upscale {model_name} Image {i%2 + 1}", key=upscale_key):
                     if upscale_type == "new_size":
@@ -352,9 +353,10 @@ def main():
                     upscaled_img.save(upscaled_img_path)
                     upscaled_resolution = get_image_resolution(upscaled_img_path)
                     st.image(upscaled_img_path, use_column_width=True)
-                    st.caption(f"업스케일된 해상도: {upscaled_resolution[0]}x{upscaled_resolution[1]}")
+                    st.caption(f"Upscaled Resolution: {upscaled_resolution[0]}x{upscaled_resolution[1]}")
+
         else:
-            st.text("분석 버튼을 눌러 이미지를 생성하세요.")
+            st.text("Press the 'Analyze' button to generate images.")
 
 if __name__ == "__main__":
     main()
