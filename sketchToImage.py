@@ -104,7 +104,6 @@ Analyze the user request and identify the edit type:
 * EDIT_MODE_DEFAULT: 
     * If the new prompt requires a change to a main object (change from a cat into a dog - the size of the changed main object is similar to the original object), use EDIT_MODE_DEFAULT. 
     * If the original image doesn't appear clear (e.g., oil painting, pencil drawing), please choose INSTRUCT_EDITING instead of EDIT_MODE_DEFAULT. 
-    * (e.g., "Change the background of the image to a beautiful sunset scene.", "Change the animal in the image from a cat to a dog.")
 
 Store this information in the `edit_type` variable. 
 </task3>
